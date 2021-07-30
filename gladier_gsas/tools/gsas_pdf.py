@@ -4,7 +4,7 @@
 #'image':'CeO2_0p1s30f-00001.tif'
 #'profile':'pwdr_Sulfur'
 
-def pdf_calc(data):
+def pdf_calc(**data):
     import GSASIIscriptable as G2sc
     filename = data.get('filename')
 
@@ -59,3 +59,16 @@ def pdf_calc(data):
     pdf.export('CeO2', 'I(Q), S(Q), F(Q), G(r), g(r)')
 
     gpx.save()
+
+@generate_flow_definition()
+class GsasPDF(GladierBaseTool):
+
+    required_input = [
+        'proc_dir',
+        'hdf_file',
+        'pilot',
+    ]
+
+    funcx_functions = [
+        pdf_calc
+    ]
