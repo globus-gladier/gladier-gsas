@@ -1,6 +1,35 @@
 from gladier import GladierBaseTool, generate_flow_definition
 
+'''
+from parsl.app.app import python_app, container_app
 
+from parsl.executors import HighThroughputExecutor
+from parsl.providers.local.local import LocalProvider
+from parsl.config import Config
+import parsl
+
+config = Config(
+    executors=[
+        HighThroughputExecutor(
+            label='local_htex',
+            max_workers=12,
+            address='0.0.0.0',
+            provider=LocalProvider(
+                min_blocks=1,
+                init_blocks=1,
+                max_blocks=1,
+                nodes_per_block=1,
+                parallelism=0.5
+            )
+        )
+    ]
+)
+parsl.load(config)
+
+executor = 'local_htex'
+'''
+
+#@python_app(executors=[executor])
 def generate_sulfur_pdf(**inputdata):
     import os
     import sys
@@ -163,7 +192,9 @@ def generate_sulfur_pdf(**inputdata):
 
     return True
 
-
+def submit_parsl(**inputdata):
+    result = generate_sulfur_pdf(**inputdata)
+    return result.get()
 
 @generate_flow_definition()
 class GSASPDF(GladierBaseTool):
