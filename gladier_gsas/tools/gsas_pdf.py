@@ -1,74 +1,207 @@
+from gladier import GladierBaseTool, generate_flow_definition
 
+'''
+from parsl.app.app import python_app, container_app
 
-#'filename':'workflow.gpx'
-#'image':'CeO2_0p1s30f-00001.tif'
-#'profile':'pwdr_Sulfur'
+from parsl.executors import HighThroughputExecutor
+from parsl.providers.local.local import LocalProvider
+from parsl.config import Config
+import parsl
 
-def pdf_calc(**data):
+config = Config(
+    executors=[
+        HighThroughputExecutor(
+            label='local_htex',
+            max_workers=12,
+            address='0.0.0.0',
+            provider=LocalProvider(
+                min_blocks=1,
+                init_blocks=1,
+                max_blocks=1,
+                nodes_per_block=1,
+                parallelism=0.5
+            )
+        )
+    ]
+)
+parsl.load(config)
+
+executor = 'local_htex'
+'''
+
+#@python_app(executors=[executor])
+def generate_sulfur_pdf(**inputdata):
+    import os
+    import sys
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.pyplot import axhline
+    from matplotlib.axis import Axis
     import GSASIIscriptable as G2sc
-    filename = data.get('filename')
+    import sys
+
+    sys.path.append("/home/dgovoni/miniconda3/GSASII")
+    data = inputdata.get('data')
+    config = inputdata.get('config')
+
+    def generate_charts(data, prefix, dest, xlabel, ylabel, volume):
+        import plotly.graph_objects as go
+        import plotly
+
+        import numpy as np
+
+        x, y = np.loadtxt(data, unpack=True)
+
+        layout = go.Layout(
+            title=prefix,
+            xaxis=dict(
+                title=xlabel
+            ),
+            yaxis=dict(
+                title=ylabel
+            ))
+
+        fig = go.Figure(layout=layout, layout_xaxis_range=[
+                        0, 20], layout_yaxis_range=[-20, 20])
+        rho = 1.0
+
+        if ylabel == 'S(Q)':
+            fig.add_shape(type='line',
+                          x0=min(x),
+                          y0=1,
+                          x1=max(x),
+                          y1=1,
+                          line_dash="dash",
+                          line=dict(color='Red'))
+
+        if ylabel == 'G(R)':
+            fig.add_shape(type='line',
+                          x0=min(x),
+                          y0=0,
+                          x1=max(x),
+                          y1=0,
+                          line_dash="dash",
+                          line=dict(color='Blue'))
+
+            # Get from gpx PDF controls sample information->element
+            noa = config['Formula'][1]
+            fig.add_trace(go.Scatter(x=x[:250], y=-4*3.142*x*noa/volume,
+                                     name="Atomic Density Line", line=dict(color='Green')))
+
+        line = dict(color="#ffe476")
+        scatter = go.Scatter(x=x, y=y,
+                             mode='lines',
+                             line=dict(color="#003865"),
+                             name='Sulfur')
+
+        fig.add_trace(scatter)
+        data = [scatter]
+        div = plotly.offline.plot(
+            data, include_plotlyjs=False, output_type='div')
+        fig.write_html(dest + "/" + prefix + ".html")
+
+    filename = data['filename']
+    ceo2ImageFile = data['images']['CeO2']
+    ceo2ControlFile = data['controls']['CeO2']
+    capillaryImageFile = data['images']['Capillary']
+    capillaryControlFile = data['controls']['Capillary']
+    sulfurImageFile = data['images']['Sulfur']
+    sulfurControlFile = data['controls']['Sulfur']
 
     # Create workflow GSAS2 project
     gpx = G2sc.G2Project(filename=filename)
 
     # Load tif images
-    g2image = gpx.add_image('CeO2_0p1s30f-00001.tif')
-    capillary = gpx.add_image(
-        'Capillary_413K-00471.tif')
-    gpx.add_image(
-        'Sulfur_At2_413K-00147.tif')
+    gpx.add_image(ceo2ImageFile)
+    gpx.add_image(capillaryImageFile)
+    gpx.add_image(sulfurImageFile)
 
+    ceo2Image = gpx.images()[0]
+    capillaryImage = gpx.images()[1]
     sulfurImage = gpx.images()[2]
 
-    # Load image preset controls (including pre-run calibration) for all images
-    for image in gpx.images():
-        image.loadControls(
-            'parms2.imctrl')
+    ceo2Image.loadControls(ceo2ControlFile)
+    capillaryImage.loadControls(capillaryControlFile)
+    sulfurImage.loadControls(sulfurControlFile)
 
-    # Set the background image for sulfur tif
-    # sulfurImage.setControls(
-    #    {'background image': ['IMG Capillary_413K-00471.tif', -1.0]})
+    sulfurPWDRList = sulfurImage.Integrate()
+    capillaryPWDRList = capillaryImage.Integrate()
 
-    # Perform the integration and acquire powder list
-    pwdrList = sulfurImage.Integrate()
-    # G2PwdrData
-    pwdrList[0].SaveProfile('pwdr_Sulfur')
-    print(pwdrList)
+    sulfurPWDRList[0].SaveProfile('pwdr_Sulfur')
+    capillaryPWDRList[0].SaveProfile('pwdr_Capillary')
 
-    pdf = gpx.add_PDF('pwdr_Sulfur.instprm', 0)
-    pdf.set_formula(['S', 1])
-    pdf.data['PDF Controls']['Container']['Name'] = pwdrList[0].name
-    pdf.data['PDF Controls']['Container']['Mult'] = -0.988
-    pdf.data['PDF Controls']['Form Vol'] = 13.306
-    pdf.data['PDF Controls']['Geometry'] = 'Cylinder'
-    pdf.data['PDF Controls']['DetType'] = 'Area Detector'
-    pdf.data['PDF Controls']['ObliqCoeff'] = 0.2
-    pdf.data['PDF Controls']['Flat Bkg'] = 5081
-    pdf.data['PDF Controls']['BackRatio'] = 0.184
-    pdf.data['PDF Controls']['Ruland'] = 0.1
-    pdf.data['PDF Controls']['Lorch'] = True
-    pdf.data['PDF Controls']['QScaleLim'] = [23.4, 26.0]
-    pdf.data['PDF Controls']['Pack'] = 1.0
-    pdf.data['PDF Controls']['Diam'] = 1.5
-    pdf.data['PDF Controls']['Trans'] = 0.2
-    pdf.data['PDF Controls']['Ruland'] = 0.1
-    pdf.data['PDF Controls']['BackRatio'] = 0.184
+    sulfurPowerFile = data['powders']['Sulfur']
+
+    pdf = gpx.add_PDF(sulfurPowerFile, 0)
+
+    pdf.data['PDF Controls'].update(config)
+    pdf.data['PDF Controls']['Container']['Name'] = capillaryPWDRList[0].name
+
+    pdf.set_formula(config['Formula'])
+
+    for i in range(5):
+        if pdf.optimize():
+            break
 
     pdf.calculate()
-    pdf.optimize()
-    pdf.export('CeO2', 'I(Q), S(Q), F(Q), G(r), g(r)')
+
+    pdf.export(data['export']['prefix'], 'I(Q), S(Q), F(Q), G(r)')
 
     gpx.save()
 
+    x, y = np.loadtxt(data['export']['prefix'] + '.gr', unpack=True)
+
+    plt.plot(x, y, label='Sulfur')
+    fig = plt.figure(1)
+
+    plt.title('Sulfur G(R)')
+    plt.xlabel('x')
+    plt.ylabel('y')
+
+    axes = plt.gca()
+
+    plt.xlim(data['limits']['xlim'])
+    plt.ylim(data['limits']['ylim'])
+
+    plt.savefig(data['outputfig'])
+    os.makedirs(data['datadir'] + "/charts", exist_ok=True)
+
+    volume = pdf.data['PDF Controls']['Form Vol']
+    generate_charts(data['export']['prefix'] + '.gr', os.path.basename(data['export']
+                    ['prefix']) + "-gr", data['datadir'] + "/charts", "Angstroms", "G(R)", volume)
+
+    x, y = np.loadtxt(data['export']['prefix'] + '.sq', unpack=True)
+
+    plt.plot(x, y, label='Sulfur')
+    fig = plt.figure(1)
+
+    plt.title('Sulfur S(Q)')
+    plt.xlabel('x')
+    plt.ylabel('y')
+
+    axes = plt.gca()
+
+    plt.xlim(data['limits']['xlim'])
+    plt.ylim(data['limits']['ylim'])
+
+    plt.savefig(data['outputfig'])
+    os.makedirs(data['datadir'] + "/charts", exist_ok=True)
+
+    generate_charts(data['export']['prefix'] + '.sq', os.path.basename(data['export']
+                    ['prefix']) + "-sq", data['datadir'] + "/charts", "Inverse Angstroms", "S(Q)", volume)
+
+    return True
+
+def submit_parsl(**inputdata):
+    result = generate_sulfur_pdf(**inputdata)
+    return result.get()
+
 @generate_flow_definition()
-class GsasPDF(GladierBaseTool):
+class GSASPDF(GladierBaseTool):
 
     required_input = [
-        'proc_dir',
-        'hdf_file',
-        'pilot',
     ]
 
     funcx_functions = [
-        pdf_calc
+        generate_sulfur_pdf
     ]
