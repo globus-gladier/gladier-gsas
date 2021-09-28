@@ -6,9 +6,9 @@ from gladier import GladierBaseClient, generate_flow_definition, GladierBaseTool
 @generate_flow_definition()
 class PDFClient(GladierBaseClient):
     gladier_tools = [
-        #'gladier_gsas.tools.TransferData',
+        'gladier_tools.globus.Transfer',
         'gladier_gsas.tools.GSASPDF',
-        #'gladier_gsas.tools.TransferResult',
+        'gladier_gsas.tools.TransferResult',
     ]
 
 
@@ -20,10 +20,10 @@ print(pdfClient.flow_definition)
 fx_endpoint_queue = '09d6ff75-c4fd-4a38-a716-705cabe34178'
 fx_endpoint_local = 'ebd3738f-4070-4513-b9db-da70f3167108'
 
-fx_endpoint = '09d6ff75-c4fd-4a38-a716-705cabe34178'  # queue
+fx_endpoint = 'd47d7b56-55c8-4245-9602-537ead1d2da4'  # test
 
-datadir = "/grand/APSWorkflows/LiquidSulfur/Experimental data/Sample 1 Heat - Tues"
-datadir2 = "/grand/APSWorkflows/LiquidSulfur/Experimental data/Sample 2 Heat - Wed"
+datadir = "/grand/APSWorkflows/dgovoni/input/Experimental data/Sample 1 Heat - Tues"
+datadir2 = "/grand/APSWorkflows/dgovoni/input/Experimental data/Sample 2 Heat - Wed"
 
 data = {
     'filename': datadir + '/sulfur-test.gpx',
@@ -51,10 +51,14 @@ data = {
     }
 }
 
-
 ##Input with automate format.
 flow_input = {
     "input": {
+        "transfer_source_endpoint_id": "4f331976-e823-11ea-8bc2-029866a337f1",  # petrel
+        "transfer_destination_endpoint_id": "08925f04-569f-11e7-bef8-22000b9a448b",  # alcf dn_theta
+        "transfer_source_path": "/LiquidSulfur",  # path on petrel
+        "transfer_destination_path": "/grand/APSWorkflows/dgovoni/input",  # path on cooley
+        'transfer_recursive': True,
         "funcx_endpoint_compute": fx_endpoint,
         "data": data,
         "config": {
@@ -85,7 +89,7 @@ flow_input = {
 # notice this input can be used directly on automate website.
 print(json.dumps(flow_input, indent=2))
 
-run_label = 'GladierTest_v1'
+run_label = 'GSASPDF'
 
 example_flow = pdfClient.run_flow(flow_input=flow_input)
 pdfClient.progress(example_flow['action_id'])
@@ -95,4 +99,3 @@ print(pdfClient.get_details(example_flow['action_id'], 'GSASPDF'))
 print('https://app.globus.org/flows/%s/runs/%s' %
       (example_flow['flow_id'], example_flow['action_id']))
 
-#pdfClient.get_details(example_flow['action_id'], 'GSASPDF')

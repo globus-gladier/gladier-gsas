@@ -7,23 +7,23 @@ class TransferData(GladierBaseTool):
         'Comment': 'Transfer a file or directory in Globus',
         'StartAt': 'TransferData',
         'States': {
-          "TransferData": {
-      "Comment": "Data out of beamline",
-      "Type": "Action",
-      "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
-      "Parameters": {
-        "source_endpoint_id.$": "$.input.globus_dest_ep", 
-        "destination_endpoint_id.$": "$.input.globus_local_ep",
-        "transfer_items": [
-          {
-            "source_path.$": "$.input.local_data_dir",
-            "destination_path.$": "$.input.data_dir",
-            "recursive": True
-          }
-        ]
-      },
-      "ResultPath": "$.TransferData",
-      "WaitTime": 600,
+            "TransferData": {
+                "Comment": "Data out of beamline",
+                "Type": "Action",
+                "ActionUrl": "https://actions.automate.globus.org/transfer/transfer",
+                "Parameters": {
+                    "source_endpoint_id.$": "$.input.globus_dest_ep",
+                    "destination_endpoint_id.$": "$.input.globus_local_ep",
+                    "transfer_items": [
+                      {
+                          "source_path.$": "$.input.local_data_dir",
+                          "destination_path.$": "$.input.data_dir",
+                          "recursive": True
+                      }
+                    ]
+                },
+                "ResultPath": "$.TransferData",
+                "WaitTime": 600,
                 'End': True
             },
         }
