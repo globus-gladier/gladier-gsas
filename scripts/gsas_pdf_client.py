@@ -6,16 +6,6 @@ import os
 import glob
 
 
-def register_container():
-    from funcx.sdk.client import FuncXClient
-    fxc = FuncXClient()
-    ##
-    from gladier_gsas.tools.gsas_pdf import gsas_pdf
-    cont_dir = '/eagle/APSDataAnalysis/GSAS_PDF/containers/'
-    container_name = 'gsas2.sif'
-    cont_id = fxc.register_container(location=cont_dir+container_name,container_type='singularity')
-    return fxc.register_function(gsas_pdf, container_uuid=cont_id)
-
 def arg_parse():
     parser = argparse.ArgumentParser()
     parser.add_argument('--hdf', help='Path to the hdf file',

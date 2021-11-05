@@ -6,7 +6,8 @@ class PDFClient(GladierBaseClient):
     gladier_tools = [
         #'gladier_gsas.tools.TransferData',
         'gladier_gsas.tools.GSASPDF',
-        ['gladier_gsas.tools.PDF2Plot','gladier_gsas.tools.PDF2Model',]
+        'gladier_gsas.tools.PDF2Plot',
+        'gladier_gsas.tools.PDF2Model',
         #'gladier_gsas.tools.TransferResult',
     ]
 
